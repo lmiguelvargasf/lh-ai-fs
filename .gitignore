@@ -21,3 +21,7 @@ dist/
 
 # Plans
 docs/plans/
+
+# Pipeline runtime artifacts
+backend/cache/authorities/*.json
+backend/evals/results/*.json

@@ -98,3 +98,87 @@ We are evaluating:
 5. How honest your reflection is
 
 Not lines of code.
+
+---
+
+## Implementation Notes (Tier 1)
+
+This repository now includes a typed, multi-agent Tier 1 verification pipeline.
+
+### Implemented Agents
+
+- `DocumentIngestAgent`: loads and chunks all case documents, with stable span anchors.
+- `CitationExtractionAgent`: extracts legal citations + direct quotes from the motion.
+- `AuthorityRetrievalAgent`: resolves authority text via cache -> CourtListener -> web fallback, with graceful failure.
+- `CitationSupportVerifierAgent`: labels citation support (`supports`, `partially_supports`, `does_not_support`, `could_not_verify`) with confidence and evidence spans.
+- `QuoteAccuracyVerifierAgent`: labels quote accuracy (`exact`, `minor_difference`, `material_difference`, `could_not_verify`) with confidence and evidence spans.
+- `ReportAssemblerAgent`: returns final structured JSON report.
+
+### API
+
+`POST /analyze`
+
+Optional request body:
+
+```json
+{
+  "mode": "tier1",
+  "use_web_retrieval": true
+}
+```
+
+Response shape:
+
+```json
+{
+  "report": {
+    "report_version": "1.0",
+    "mode": "tier1",
+    "status": "complete|partial|failed",
+    "run_id": "...",
+    "summary": {
+      "citations_extracted": 0,
+      "quotes_checked": 0,
+      "flags_total": 0
+    },
+    "citation_findings": [],
+    "quote_findings": [],
+    "errors": [],
+    "timings_ms": {}
+  }
+}
+```
+
+## Evals
+
+Run deterministic evals from repo root:
+
+```bash
+python3 run_evals.py
+```
+
+Artifacts:
+
+- Gold fixture: `backend/evals/fixtures/tier1_gold.json`
+- Authority overrides (deterministic eval retrieval): `backend/evals/fixtures/tier1_authority_overrides.json`
+- Results output: `backend/evals/results/latest.json`
+
+Metrics produced:
+
+- Precision (avoiding false flags)
+- Recall (catching known flaws)
+- Hallucination rate (invalid/missing evidence anchors)
+
+## Tests
+
+Run backend tests:
+
+```bash
+python3 -m pytest backend/tests -q
+```
+
+Current test coverage includes:
+
+- Citation and quote extraction behavior
+- Authority retrieval fallback/override behavior
+- End-to-end Tier 1 report contract

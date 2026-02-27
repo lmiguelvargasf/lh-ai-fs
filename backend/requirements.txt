@@ -2,3 +2,10 @@ fastapi
 uvicorn
 openai
 python-dotenv
+pydantic
+httpx
+tenacity
+pytest
+pytest-asyncio
+rapidfuzz
+eval_type_backport

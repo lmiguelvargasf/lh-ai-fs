@@ -1,0 +1,14 @@
+{
+  "Privette v. Superior Court, 5 Cal.4th 689, 695 (1993)": {
+    "retrieval_status": "found",
+    "source_url": "https://law.justia.com/cases/california/supreme-court/4th/5/689.html",
+    "authority_text": "Privette explains that when an employee of an independent contractor is injured while performing contracted work, the hirer is ordinarily not liable in tort. The decision emphasizes delegation of workplace safety responsibility to the contractor and the workers' compensation framework.",
+    "error": null
+  },
+  "Seabright Insurance Co. v. US Airways, Inc., 52 Cal.4th 590, 598 (2011)": {
+    "retrieval_status": "found",
+    "source_url": "https://law.justia.com/cases/california/supreme-court/2011/s181601.html",
+    "authority_text": "Seabright holds that by hiring an independent contractor, a hirer delegates to the contractor any tort-law duty it owes to the contractor's employees to ensure workplace safety. The opinion does not create an OSHA-compliance presumption of due care.",
+    "error": null
+  }
+}

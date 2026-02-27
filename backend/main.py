@@ -1,6 +1,10 @@
-from fastapi import FastAPI
+from __future__ import annotations
+
+from fastapi import Body, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
+
+from analysis_service import analyze_documents
+from schemas import AnalyzeRequest
 
 app = FastAPI()
 
@@ -12,19 +16,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DOCUMENTS_DIR = Path(__file__).parent / "documents"
 
-
-def load_documents() -> dict[str, str]:
-    """Load all documents from the documents directory."""
-    documents = {}
-    for file_path in DOCUMENTS_DIR.glob("*.txt"):
-        documents[file_path.stem] = file_path.read_text()
-    return documents
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
 
 
 @app.post("/analyze")
-async def analyze():
-    documents = load_documents()
-    # TODO: Build your multi-agent pipeline here
-    return {"report": None}
+async def analyze(request: AnalyzeRequest | None = Body(default=None)) -> dict:
+    payload = request or AnalyzeRequest()
+    report = analyze_documents(payload)
+    return {"report": report.model_dump()}
