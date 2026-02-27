@@ -135,22 +135,6 @@ a {
   opacity: 0.72;
 }
 
-.reference-link {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 12px;
-  padding: 11px 16px;
-  color: var(--lh-white);
-  text-decoration: none;
-  transition: background 170ms ease;
-}
-
-.reference-link:hover {
-  background: rgba(255, 255, 255, 0.16);
-  text-decoration: none;
-}
-
 .panel {
   background: rgba(255, 255, 255, 0.84);
   border: 1px solid var(--lh-border);

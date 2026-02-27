@@ -95,9 +95,6 @@ function App() {
             <button className="run-button" onClick={runAnalysis} disabled={loading}>
               {loading ? 'Analyzing Record...' : 'Run Analysis'}
             </button>
-            <a className="reference-link" href="https://www.learned-hand.ai" target="_blank" rel="noreferrer">
-              Design Inspiration
-            </a>
           </div>
         </header>
 
