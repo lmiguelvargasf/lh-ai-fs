@@ -101,9 +101,9 @@ Not lines of code.
 
 ---
 
-## Implementation Notes (Tier 1)
+## Implementation Notes (Tier 1 + Tier 2)
 
-This repository now includes a typed, multi-agent Tier 1 verification pipeline.
+This repository includes a typed, multi-agent verification pipeline with Tier 1 and Tier 2 capabilities.
 
 ### Implemented Agents
 
@@ -112,6 +112,8 @@ This repository now includes a typed, multi-agent Tier 1 verification pipeline.
 - `AuthorityRetrievalAgent`: resolves authority text via cache -> CourtListener -> web fallback, with graceful failure.
 - `CitationSupportVerifierAgent`: labels citation support (`supports`, `partially_supports`, `does_not_support`, `could_not_verify`) with confidence and evidence spans.
 - `QuoteAccuracyVerifierAgent`: labels quote accuracy (`exact`, `minor_difference`, `material_difference`, `could_not_verify`) with confidence and evidence spans.
+- `FactClaimExtractionAgent`: extracts atomic factual claims from the motion's fact statements and argument facts.
+- `CrossDocumentConsistencyAgent`: compares each factual claim against police report, medical record excerpt, and witness statement with labels (`supported`, `contradicted`, `partially_supported`, `could_not_verify`).
 - `ReportAssemblerAgent`: returns final structured JSON report.
 
 ### API
@@ -122,7 +124,7 @@ Optional request body:
 
 ```json
 {
-  "mode": "tier1",
+  "mode": "tier2",
   "use_web_retrieval": true
 }
 ```
@@ -133,21 +135,26 @@ Response shape:
 {
   "report": {
     "report_version": "1.0",
-    "mode": "tier1",
+    "mode": "tier2",
     "status": "complete|partial|failed",
     "run_id": "...",
     "summary": {
       "citations_extracted": 0,
       "quotes_checked": 0,
-      "flags_total": 0
+      "flags_total": 0,
+      "fact_claims_checked": 0,
+      "cross_doc_flags_total": 0
     },
     "citation_findings": [],
     "quote_findings": [],
+    "cross_document_findings": [],
     "errors": [],
     "timings_ms": {}
   }
 }
 ```
+
+If no request body is provided, the API defaults to `mode: "tier2"`. `mode: "tier1"` remains supported for backwards compatibility.
 
 ## Evals
 
@@ -160,6 +167,7 @@ python3 run_evals.py
 Artifacts:
 
 - Gold fixture: `backend/evals/fixtures/tier1_gold.json`
+- Tier 2 cross-document gold fixture: `backend/evals/fixtures/tier2_cross_doc_gold.json`
 - Authority overrides (deterministic eval retrieval): `backend/evals/fixtures/tier1_authority_overrides.json`
 - Results output: `backend/evals/results/latest.json`
 
@@ -168,6 +176,10 @@ Metrics produced:
 - Precision (avoiding false flags)
 - Recall (catching known flaws)
 - Hallucination rate (invalid/missing evidence anchors)
+- Task breakdown:
+  - `citation_quote` metrics
+  - `cross_document` metrics
+- Combined macro roll-up across tasks
 
 ## Tests
 
@@ -181,4 +193,6 @@ Current test coverage includes:
 
 - Citation and quote extraction behavior
 - Authority retrieval fallback/override behavior
-- End-to-end Tier 1 report contract
+- Fact claim extraction behavior
+- Cross-document contradiction and uncertainty behavior
+- End-to-end Tier 1 + Tier 2 report contracts

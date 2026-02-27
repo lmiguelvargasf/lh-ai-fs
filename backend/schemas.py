@@ -6,7 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-PipelineMode = Literal["tier1"]
+PipelineMode = Literal["tier1", "tier2"]
 ReportStatus = Literal["complete", "partial", "failed"]
 RetrievalStatus = Literal["found", "not_found", "error", "disabled"]
 SupportLabel = Literal[
@@ -16,11 +16,17 @@ SupportLabel = Literal[
     "could_not_verify",
 ]
 QuoteLabel = Literal["exact", "minor_difference", "material_difference", "could_not_verify"]
+CrossDocLabel = Literal[
+    "supported",
+    "contradicted",
+    "partially_supported",
+    "could_not_verify",
+]
 Severity = Literal["low", "medium", "high"]
 
 
 class AnalyzeRequest(BaseModel):
-    mode: PipelineMode = "tier1"
+    mode: PipelineMode = "tier2"
     use_web_retrieval: bool = True
 
 
@@ -99,9 +105,26 @@ class QuoteAssessment(BaseModel):
     uncertainty_reason: str | None = None
 
 
+class FactClaim(BaseModel):
+    id: str
+    claim_text: str
+    claim_type: str
+    motion_span: TextSpan
+    source_section: str
+
+
+class CrossDocumentAssessment(BaseModel):
+    claim_id: str
+    label: CrossDocLabel
+    confidence: float = Field(ge=0.0, le=1.0)
+    reason: str
+    evidence_spans: list[TextSpan] = Field(default_factory=list)
+    uncertainty_reason: str | None = None
+
+
 class Finding(BaseModel):
     id: str
-    kind: Literal["citation_support", "quote_accuracy"]
+    kind: Literal["citation_support", "quote_accuracy", "cross_document_consistency"]
     severity: Severity
     confidence: float = Field(ge=0.0, le=1.0)
     status: str
@@ -141,10 +164,25 @@ class QuoteFinding(BaseModel):
     flagged: bool
 
 
+class CrossDocumentFinding(BaseModel):
+    id: str
+    claim_id: str
+    claim_text: str
+    label: CrossDocLabel
+    confidence: float = Field(ge=0.0, le=1.0)
+    reason: str
+    uncertainty_reason: str | None = None
+    motion_span: TextSpan
+    evidence_spans: list[TextSpan] = Field(default_factory=list)
+    flagged: bool
+
+
 class ReportSummary(BaseModel):
     citations_extracted: int = 0
     quotes_checked: int = 0
     flags_total: int = 0
+    fact_claims_checked: int = 0
+    cross_doc_flags_total: int = 0
 
 
 class PipelineError(BaseModel):
@@ -155,13 +193,14 @@ class PipelineError(BaseModel):
 
 class VerificationReport(BaseModel):
     report_version: str = "1.0"
-    mode: PipelineMode = "tier1"
+    mode: PipelineMode = "tier2"
     status: ReportStatus = "complete"
     run_id: str
     generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     summary: ReportSummary = Field(default_factory=ReportSummary)
     citation_findings: list[CitationFinding] = Field(default_factory=list)
     quote_findings: list[QuoteFinding] = Field(default_factory=list)
+    cross_document_findings: list[CrossDocumentFinding] = Field(default_factory=list)
     findings: list[Finding] = Field(default_factory=list)
     errors: list[PipelineError] = Field(default_factory=list)
     timings_ms: dict[str, int] = Field(default_factory=dict)
@@ -173,6 +212,8 @@ class AnalysisArtifacts(BaseModel):
     authorities: list[AuthorityRecord]
     support_assessments: list[SupportAssessment]
     quote_assessments: list[QuoteAssessment]
+    fact_claims: list[FactClaim] = Field(default_factory=list)
+    cross_doc_assessments: list[CrossDocumentAssessment] = Field(default_factory=list)
 
 
 class EvalMetricSummary(BaseModel):
@@ -182,6 +223,8 @@ class EvalMetricSummary(BaseModel):
     true_positive: int
     false_positive: int
     false_negative: int
+    task_breakdown: dict[str, Any] = Field(default_factory=dict)
+    combined: dict[str, Any] = Field(default_factory=dict)
 
 
 class EvalResult(BaseModel):

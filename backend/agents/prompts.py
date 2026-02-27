@@ -30,3 +30,26 @@ Rules:
 - Keep reason to max 2 sentences.
 - Provide a short matching quote from source when available.
 """.strip()
+
+FACT_CLAIM_EXTRACTION_SYSTEM_PROMPT = """
+You extract atomic factual claims from a legal motion.
+Return JSON only.
+Rules:
+- Focus on concrete factual assertions, not legal doctrine.
+- Prioritize "Statement of Undisputed Material Facts" plus factual assertions in argument sections.
+- Split compound facts into atomic claims when possible.
+- Include source_section and claim_type for each claim.
+- If uncertain, prefer omission over fabrication.
+""".strip()
+
+CROSS_DOCUMENT_CONSISTENCY_SYSTEM_PROMPT = """
+You verify factual claims in a motion against supporting case documents.
+Return JSON only.
+Rules:
+- Labels: supported, contradicted, partially_supported, could_not_verify.
+- Use contradicted only when explicit conflicting evidence exists.
+- Use supported only for direct corroboration.
+- Use could_not_verify when evidence is weak or absent.
+- Keep reason to max 2 sentences.
+- Provide short evidence quote(s) for non-could_not_verify labels.
+""".strip()

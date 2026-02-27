@@ -6,14 +6,16 @@ from uuid import uuid4
 from agents.authority_retrieval_agent import AuthorityRetrievalAgent
 from agents.citation_extraction_agent import CitationExtractionAgent
 from agents.citation_support_verifier_agent import CitationSupportVerifierAgent
+from agents.cross_document_consistency_agent import CrossDocumentConsistencyAgent
 from agents.document_ingest_agent import DocumentIngestAgent
+from agents.fact_claim_extraction_agent import FactClaimExtractionAgent
 from agents.quote_accuracy_verifier_agent import QuoteAccuracyVerifierAgent
 from agents.report_assembler_agent import ReportAssemblerAgent
 from schemas import AnalyzeRequest, PipelineError, VerificationReport
 
 
 class PipelineOrchestrator:
-    """Typed DAG orchestration for Tier 1 analysis pipeline."""
+    """Typed DAG orchestration for Tier 1 and Tier 2 analysis pipeline."""
 
     def __init__(self) -> None:
         self.document_ingest_agent = DocumentIngestAgent()
@@ -21,6 +23,8 @@ class PipelineOrchestrator:
         self.authority_retrieval_agent = AuthorityRetrievalAgent()
         self.citation_support_verifier_agent = CitationSupportVerifierAgent()
         self.quote_accuracy_verifier_agent = QuoteAccuracyVerifierAgent()
+        self.fact_claim_extraction_agent = FactClaimExtractionAgent()
+        self.cross_document_consistency_agent = CrossDocumentConsistencyAgent()
         self.report_assembler_agent = ReportAssemblerAgent()
 
     def run(
@@ -38,6 +42,8 @@ class PipelineOrchestrator:
         authorities = []
         support_assessments = []
         quote_assessments = []
+        fact_claims = []
+        cross_doc_assessments = []
 
         start = time.perf_counter()
         try:
@@ -113,6 +119,37 @@ class PipelineOrchestrator:
         timings_ms["quote_accuracy_verification"] = int((time.perf_counter() - start) * 1000)
 
         start = time.perf_counter()
+        if request.mode == "tier2" and bundle is not None:
+            try:
+                fact_claims = self.fact_claim_extraction_agent.run(bundle)
+            except Exception as exc:  # noqa: BLE001
+                errors.append(
+                    PipelineError(
+                        step="fact_claim_extraction",
+                        message="Fact claim extraction failed",
+                        detail=str(exc),
+                    )
+                )
+        timings_ms["fact_claim_extraction"] = int((time.perf_counter() - start) * 1000)
+
+        start = time.perf_counter()
+        if request.mode == "tier2" and bundle is not None:
+            try:
+                cross_doc_assessments = self.cross_document_consistency_agent.run(
+                    fact_claims,
+                    bundle,
+                )
+            except Exception as exc:  # noqa: BLE001
+                errors.append(
+                    PipelineError(
+                        step="cross_document_consistency",
+                        message="Cross-document consistency verification failed",
+                        detail=str(exc),
+                    )
+                )
+        timings_ms["cross_document_consistency"] = int((time.perf_counter() - start) * 1000)
+
+        start = time.perf_counter()
         if extraction is None:
             return VerificationReport(
                 mode=request.mode,
@@ -130,6 +167,8 @@ class PipelineOrchestrator:
             authorities=authorities,
             support_assessments=support_assessments,
             quote_assessments=quote_assessments,
+            fact_claims=fact_claims,
+            cross_doc_assessments=cross_doc_assessments,
             errors=errors,
             timings_ms=timings_ms,
         )

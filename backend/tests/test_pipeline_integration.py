@@ -26,4 +26,26 @@ def test_tier1_pipeline_returns_structured_report() -> None:
     assert report.summary.citations_extracted > 0
     assert isinstance(report.citation_findings, list)
     assert isinstance(report.quote_findings, list)
+    assert isinstance(report.cross_document_findings, list)
+    assert report.status in {"complete", "partial"}
+
+
+def test_tier2_pipeline_returns_cross_document_findings() -> None:
+    fixture_path = (
+        Path(__file__).resolve().parents[1]
+        / "evals"
+        / "fixtures"
+        / "tier1_authority_overrides.json"
+    )
+    overrides = json.loads(fixture_path.read_text())
+
+    report = analyze_documents(
+        AnalyzeRequest(mode="tier2", use_web_retrieval=False),
+        documents=load_documents(),
+        authority_overrides=overrides,
+    )
+
+    assert report.mode == "tier2"
+    assert report.summary.fact_claims_checked > 0
+    assert isinstance(report.cross_document_findings, list)
     assert report.status in {"complete", "partial"}

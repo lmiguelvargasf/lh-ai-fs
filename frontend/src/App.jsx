@@ -31,7 +31,7 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ mode: 'tier1', use_web_retrieval: true }),
+        body: JSON.stringify({ mode: 'tier2', use_web_retrieval: true }),
       })
 
       if (!response.ok) {
@@ -52,7 +52,7 @@ function App() {
   return (
     <div style={{ maxWidth: '1100px', margin: '32px auto', padding: '0 20px', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
       <h1 style={{ marginBottom: 6 }}>BS Detector</h1>
-      <p style={{ marginTop: 0, color: '#334155' }}>Tier 1 multi-agent legal verification pipeline</p>
+      <p style={{ marginTop: 0, color: '#334155' }}>Tier 2 multi-agent legal verification pipeline</p>
 
       <button
         onClick={runAnalysis}
@@ -97,6 +97,14 @@ function App() {
               <div style={{ fontSize: 12, color: '#334155' }}>Flags</div>
               <div style={{ fontWeight: 700 }}>{report.summary?.flags_total ?? 0}</div>
             </div>
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: '#334155' }}>Fact Claims</div>
+              <div style={{ fontWeight: 700 }}>{report.summary?.fact_claims_checked ?? 0}</div>
+            </div>
+            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: '#334155' }}>Cross-Doc Flags</div>
+              <div style={{ fontWeight: 700 }}>{report.summary?.cross_doc_flags_total ?? 0}</div>
+            </div>
           </div>
 
           <SectionTitle>Citation Findings</SectionTitle>
@@ -128,6 +136,21 @@ function App() {
                   <span style={badgeStyle(item.flagged)}>{item.flagged ? 'Flagged' : 'Clear'}</span>
                 </div>
                 <div style={{ marginTop: 8, color: '#334155' }}><strong>Label:</strong> {item.quote_label}</div>
+                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence:</strong> {item.confidence}</div>
+                <div style={{ marginTop: 4, color: '#334155' }}><strong>Reason:</strong> {item.reason}</div>
+              </div>
+            ))}
+          </div>
+
+          <SectionTitle>Cross-Document Findings</SectionTitle>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {(report.cross_document_findings ?? []).map((item) => (
+              <div key={item.id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+                  <div style={{ fontWeight: 700 }}>{item.claim_text}</div>
+                  <span style={badgeStyle(item.flagged)}>{item.flagged ? 'Flagged' : 'Clear'}</span>
+                </div>
+                <div style={{ marginTop: 8, color: '#334155' }}><strong>Label:</strong> {item.label}</div>
                 <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence:</strong> {item.confidence}</div>
                 <div style={{ marginTop: 4, color: '#334155' }}><strong>Reason:</strong> {item.reason}</div>
               </div>

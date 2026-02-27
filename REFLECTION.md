@@ -2,37 +2,36 @@
 
 ## What I prioritized
 
-I prioritized a reliable Tier 1 pipeline with typed contracts, explicit agent boundaries, and deterministic evaluation outputs.
+I prioritized a reliable Tier 1 + Tier 2 pipeline with typed contracts, explicit agent boundaries, and deterministic evaluation outputs.
 
 Key decisions:
 
 1. Typed DAG orchestration over free-form supervisor behavior to keep failures isolated and debuggable.
-2. Strict JSON and schema-driven handoffs between agents.
-3. Deterministic eval harness using gold fixtures plus authority overrides to avoid flaky network-dependent scores.
+2. Strict JSON/schema-driven handoffs between agents, including the new cross-document branch.
+3. Deterministic eval harness with fixed fixtures and explicit hallucination checks so quality signals are reproducible.
 
-## Tradeoffs made
+## Tier 2 tradeoffs
 
-1. Citation extraction is regex-first, not fully semantic parsing. It is fast and deterministic, but it may miss unusual citation formats.
-2. Support and quote verification use LLM when available, but fallback heuristics are used when model calls fail. This improves robustness but can reduce legal nuance.
-3. CourtListener/web retrieval is opportunistic and best-effort. In failure cases, the system intentionally returns `could_not_verify` instead of over-claiming.
+1. Cross-document consistency is precision-first for contradiction flags. I only mark `contradicted` with explicit conflicting evidence, and I default to `could_not_verify` when evidence is weak.
+2. Fact-claim extraction is deterministic by default (rules-first) to keep evals stable, with optional LLM extraction behind a toggle.
+3. Cross-document checks are anchored to sentence-level evidence spans, which improves auditability but can miss nuanced multi-sentence context.
 
 ## What worked well
 
-1. Agent decomposition is clear and non-overlapping.
-2. The `/analyze` response is structured and UI-consumable.
-3. Eval metrics are reproducible and include a concrete hallucination check tied to evidence anchors.
+1. Agent decomposition remains clear and non-overlapping across Tier 1 and Tier 2.
+2. `/analyze` returns a structured report with citation, quote, and cross-document findings.
+3. Eval reporting now includes task breakdown (`citation_quote`, `cross_document`) and combined roll-up metrics.
 
-## Gaps and limitations
+## Remaining gaps and limitations
 
-1. Tier 2 cross-document factual consistency checks are not yet implemented.
-2. Tier 3 judicial memo and confidence calibration layering are not implemented.
-3. Retrieval quality can vary by source availability and search result quality.
-4. Current confidence values are useful but not yet statistically calibrated.
+1. Tier 3 judicial memo and confidence calibration layering are not implemented.
+2. Citation/quote verification still depends on best-effort authority retrieval and can degrade when sources are unavailable.
+3. Rule-based cross-document logic is tuned for this case format and should be generalized with broader fixtures.
+4. Current confidence values are heuristic and not statistically calibrated.
 
 ## If I had more time
 
-1. Implement `CrossDocumentConsistencyAgent` with claim extraction and contradiction detection.
-2. Add richer authority retrieval adapters (opinion text APIs + robust HTML extraction).
-3. Add more adversarial eval fixtures and regression tests around failure modes.
-4. Add calibrated confidence post-processing and threshold tuning with held-out eval cases.
-5. Add deeper frontend drill-down for evidence spans and side-by-side quote/source comparison.
+1. Add more cross-document fixtures (adversarial contradictions, partial supports, and neutral controls).
+2. Add optional LLM adjudication for edge cases while preserving deterministic fallback.
+3. Add calibration and threshold tuning using held-out eval examples.
+4. Extend frontend evidence drill-down for side-by-side claim vs source views.

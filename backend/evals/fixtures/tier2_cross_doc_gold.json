@@ -1,0 +1,40 @@
+{
+  "cross_doc_expectations": [
+    {
+      "claim_contains": "Harmon served as the general contractor for the commercial renovation project",
+      "should_flag": false,
+      "expected_label": "supported",
+      "note": "Police and witness documents identify Harmon as general contractor."
+    },
+    {
+      "claim_contains": "Rivera was employed by Apex Staffing Solutions",
+      "should_flag": false,
+      "expected_label": "supported",
+      "note": "External docs identify Apex as Rivera's employer."
+    },
+    {
+      "claim_contains": "On or about March 14, 2021",
+      "should_flag": true,
+      "expected_label": "contradicted",
+      "note": "External records consistently report March 12, 2021 for the incident."
+    },
+    {
+      "claim_contains": "not wearing required personal protective equipment",
+      "should_flag": true,
+      "expected_label": "contradicted",
+      "note": "Police and witness materials state Rivera wore hard hat and harness."
+    },
+    {
+      "claim_contains": "passed all OSHA inspections conducted at the site",
+      "should_flag": false,
+      "expected_label": "could_not_verify",
+      "note": "No inspection report is included among provided documents."
+    },
+    {
+      "claim_contains": "Rivera filed the instant action on March 10, 2023",
+      "should_flag": false,
+      "expected_label": "could_not_verify",
+      "note": "Court filing records are not in provided documents."
+    }
+  ]
+}
