@@ -2,6 +2,11 @@ import { useMemo, useState } from 'react'
 import './App.css'
 
 const API_URL = 'http://localhost:8002/analyze'
+const LOADING_STEPS = [
+  'Extracting citations and direct quotes',
+  'Checking cross-document factual consistency',
+  'Calibrating confidence and drafting memo',
+]
 
 function SectionTitle({ title, count }) {
   return (
@@ -30,6 +35,35 @@ function formatConfidence(value) {
     return 'n/a'
   }
   return value.toFixed(2)
+}
+
+function LoadingPanel() {
+  return (
+    <section className="panel loading-panel section-appear" aria-live="polite" aria-busy="true">
+      <div className="loading-head">
+        <div>
+          <h2>Analyzing Case File</h2>
+          <p>Running multi-agent verification across authorities, quotes, and evidence records.</p>
+        </div>
+        <div className="signal-orb" aria-hidden>
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+      <div className="loading-track" aria-hidden>
+        <div className="loading-beam" />
+      </div>
+      <ul className="loading-steps">
+        {LOADING_STEPS.map((step, index) => (
+          <li key={step} style={{ '--step-delay': `${index * 220}ms` }}>
+            <span className="step-dot" aria-hidden />
+            <span>{step}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
 }
 
 function App() {
@@ -104,6 +138,8 @@ function App() {
             <p>{error}</p>
           </section>
         )}
+
+        {loading && <LoadingPanel />}
 
         {hasReport && (
           <>
