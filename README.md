@@ -101,9 +101,9 @@ Not lines of code.
 
 ---
 
-## Implementation Notes (Tier 1 + Tier 2)
+## Implementation Notes (Tier 3 Final)
 
-This repository includes a typed, multi-agent verification pipeline with Tier 1 and Tier 2 capabilities.
+This repository now runs in strict Tier 3 mode only.
 
 ### Implemented Agents
 
@@ -114,7 +114,9 @@ This repository includes a typed, multi-agent verification pipeline with Tier 1 
 - `QuoteAccuracyVerifierAgent`: labels quote accuracy (`exact`, `minor_difference`, `material_difference`, `could_not_verify`) with confidence and evidence spans.
 - `FactClaimExtractionAgent`: extracts atomic factual claims from the motion's fact statements and argument facts.
 - `CrossDocumentConsistencyAgent`: compares each factual claim against police report, medical record excerpt, and witness statement with labels (`supported`, `contradicted`, `partially_supported`, `could_not_verify`).
-- `ReportAssemblerAgent`: returns final structured JSON report.
+- `ConfidenceCalibrationAgent`: recalibrates raw confidence with deterministic penalties/bonuses and emits `confidence_reason`.
+- `JudicialMemoAgent`: generates one judicial-facing paragraph from top findings (LLM-first, deterministic template fallback).
+- `ReportAssemblerAgent`: returns final structured JSON report with calibrated confidence + memo.
 
 ### API
 
@@ -124,7 +126,6 @@ Optional request body:
 
 ```json
 {
-  "mode": "tier2",
   "use_web_retrieval": true
 }
 ```
@@ -135,9 +136,15 @@ Response shape:
 {
   "report": {
     "report_version": "1.0",
-    "mode": "tier2",
+    "mode": "tier3",
     "status": "complete|partial|failed",
     "run_id": "...",
+    "judicial_memo": {
+      "text": "One-paragraph memo...",
+      "supporting_finding_ids": ["finding_citation_001"],
+      "generation_mode": "llm|template",
+      "uncertainty_note": null
+    },
     "summary": {
       "citations_extracted": 0,
       "quotes_checked": 0,
@@ -148,13 +155,17 @@ Response shape:
     "citation_findings": [],
     "quote_findings": [],
     "cross_document_findings": [],
+    "findings": [],
     "errors": [],
     "timings_ms": {}
   }
 }
 ```
 
-If no request body is provided, the API defaults to `mode: "tier2"`. `mode: "tier1"` remains supported for backwards compatibility.
+All findings include:
+- `raw_confidence`
+- calibrated `confidence`
+- `confidence_reason`
 
 ## Evals
 
@@ -166,8 +177,7 @@ python3 run_evals.py
 
 Artifacts:
 
-- Gold fixture: `backend/evals/fixtures/tier1_gold.json`
-- Tier 2 cross-document gold fixture: `backend/evals/fixtures/tier2_cross_doc_gold.json`
+- Tier 3 gold fixture: `backend/evals/fixtures/tier3_gold.json`
 - Authority overrides (deterministic eval retrieval): `backend/evals/fixtures/tier1_authority_overrides.json`
 - Results output: `backend/evals/results/latest.json`
 
@@ -180,6 +190,9 @@ Metrics produced:
   - `citation_quote` metrics
   - `cross_document` metrics
 - Combined macro roll-up across tasks
+- Tier 3 contracts:
+  - `confidence_contract_pass_rate`
+  - `memo_contract_pass`
 
 ## Tests
 
@@ -195,4 +208,6 @@ Current test coverage includes:
 - Authority retrieval fallback/override behavior
 - Fact claim extraction behavior
 - Cross-document contradiction and uncertainty behavior
-- End-to-end Tier 1 + Tier 2 report contracts
+- Confidence calibration penalties/bonuses and clamping
+- Judicial memo LLM path + template fallback behavior
+- End-to-end Tier 3 report contract

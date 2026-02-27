@@ -6,7 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-PipelineMode = Literal["tier1", "tier2"]
+PipelineMode = Literal["tier3"]
 ReportStatus = Literal["complete", "partial", "failed"]
 RetrievalStatus = Literal["found", "not_found", "error", "disabled"]
 SupportLabel = Literal[
@@ -23,10 +23,10 @@ CrossDocLabel = Literal[
     "could_not_verify",
 ]
 Severity = Literal["low", "medium", "high"]
+MemoGenerationMode = Literal["llm", "template"]
 
 
 class AnalyzeRequest(BaseModel):
-    mode: PipelineMode = "tier2"
     use_web_retrieval: bool = True
 
 
@@ -122,11 +122,21 @@ class CrossDocumentAssessment(BaseModel):
     uncertainty_reason: str | None = None
 
 
+class ConfidenceCalibration(BaseModel):
+    finding_kind: Literal["citation_support", "quote_accuracy", "cross_document_consistency"]
+    reference_id: str
+    raw_confidence: float = Field(ge=0.0, le=1.0)
+    calibrated_confidence: float = Field(ge=0.0, le=1.0)
+    confidence_reason: str
+
+
 class Finding(BaseModel):
     id: str
     kind: Literal["citation_support", "quote_accuracy", "cross_document_consistency"]
     severity: Severity
+    raw_confidence: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
+    confidence_reason: str
     status: str
     supports_flag: bool
     reference_id: str
@@ -140,7 +150,9 @@ class CitationFinding(BaseModel):
     raw_citation: str
     proposition_text: str
     support_label: SupportLabel
+    raw_confidence: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
+    confidence_reason: str
     reason: str
     uncertainty_reason: str | None = None
     retrieval_status: RetrievalStatus
@@ -156,7 +168,9 @@ class QuoteFinding(BaseModel):
     quote_text: str
     citation_id: str | None = None
     quote_label: QuoteLabel
+    raw_confidence: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
+    confidence_reason: str
     reason: str
     uncertainty_reason: str | None = None
     motion_span: TextSpan
@@ -169,12 +183,21 @@ class CrossDocumentFinding(BaseModel):
     claim_id: str
     claim_text: str
     label: CrossDocLabel
+    raw_confidence: float = Field(ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
+    confidence_reason: str
     reason: str
     uncertainty_reason: str | None = None
     motion_span: TextSpan
     evidence_spans: list[TextSpan] = Field(default_factory=list)
     flagged: bool
+
+
+class JudicialMemo(BaseModel):
+    text: str = ""
+    supporting_finding_ids: list[str] = Field(default_factory=list)
+    generation_mode: MemoGenerationMode = "template"
+    uncertainty_note: str | None = None
 
 
 class ReportSummary(BaseModel):
@@ -193,7 +216,7 @@ class PipelineError(BaseModel):
 
 class VerificationReport(BaseModel):
     report_version: str = "1.0"
-    mode: PipelineMode = "tier2"
+    mode: PipelineMode = "tier3"
     status: ReportStatus = "complete"
     run_id: str
     generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -202,6 +225,7 @@ class VerificationReport(BaseModel):
     quote_findings: list[QuoteFinding] = Field(default_factory=list)
     cross_document_findings: list[CrossDocumentFinding] = Field(default_factory=list)
     findings: list[Finding] = Field(default_factory=list)
+    judicial_memo: JudicialMemo = Field(default_factory=JudicialMemo)
     errors: list[PipelineError] = Field(default_factory=list)
     timings_ms: dict[str, int] = Field(default_factory=dict)
 
@@ -214,6 +238,7 @@ class AnalysisArtifacts(BaseModel):
     quote_assessments: list[QuoteAssessment]
     fact_claims: list[FactClaim] = Field(default_factory=list)
     cross_doc_assessments: list[CrossDocumentAssessment] = Field(default_factory=list)
+    calibrations: list[ConfidenceCalibration] = Field(default_factory=list)
 
 
 class EvalMetricSummary(BaseModel):
@@ -225,6 +250,7 @@ class EvalMetricSummary(BaseModel):
     false_negative: int
     task_breakdown: dict[str, Any] = Field(default_factory=dict)
     combined: dict[str, Any] = Field(default_factory=dict)
+    tier3_contracts: dict[str, Any] = Field(default_factory=dict)
 
 
 class EvalResult(BaseModel):

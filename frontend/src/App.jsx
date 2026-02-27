@@ -31,7 +31,7 @@ function App() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ mode: 'tier2', use_web_retrieval: true }),
+        body: JSON.stringify({ use_web_retrieval: true }),
       })
 
       if (!response.ok) {
@@ -52,7 +52,7 @@ function App() {
   return (
     <div style={{ maxWidth: '1100px', margin: '32px auto', padding: '0 20px', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
       <h1 style={{ marginBottom: 6 }}>BS Detector</h1>
-      <p style={{ marginTop: 0, color: '#334155' }}>Tier 2 multi-agent legal verification pipeline</p>
+      <p style={{ marginTop: 0, color: '#334155' }}>Tier 3 multi-agent legal verification pipeline</p>
 
       <button
         onClick={runAnalysis}
@@ -79,6 +79,19 @@ function App() {
 
       {hasReport && (
         <>
+          <SectionTitle>Judicial Memo</SectionTitle>
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
+            <div style={{ color: '#0f172a', lineHeight: 1.45 }}>{report.judicial_memo?.text || 'No memo available.'}</div>
+            <div style={{ marginTop: 8, color: '#334155' }}>
+              <strong>Generation:</strong> {report.judicial_memo?.generation_mode ?? 'n/a'}
+            </div>
+            {report.judicial_memo?.uncertainty_note && (
+              <div style={{ marginTop: 4, color: '#7c2d12' }}>
+                <strong>Note:</strong> {report.judicial_memo.uncertainty_note}
+              </div>
+            )}
+          </div>
+
           <SectionTitle>Run Summary</SectionTitle>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
             <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
@@ -117,6 +130,8 @@ function App() {
                 </div>
                 <div style={{ marginTop: 8, color: '#334155' }}><strong>Label:</strong> {item.support_label}</div>
                 <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence:</strong> {item.confidence}</div>
+                <div style={{ marginTop: 4, color: '#334155' }}><strong>Raw Confidence:</strong> {item.raw_confidence}</div>
+                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence Reason:</strong> {item.confidence_reason}</div>
                 <div style={{ marginTop: 4, color: '#334155' }}><strong>Reason:</strong> {item.reason}</div>
                 {item.source_url && (
                   <div style={{ marginTop: 4 }}>
@@ -137,6 +152,8 @@ function App() {
                 </div>
                 <div style={{ marginTop: 8, color: '#334155' }}><strong>Label:</strong> {item.quote_label}</div>
                 <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence:</strong> {item.confidence}</div>
+                <div style={{ marginTop: 4, color: '#334155' }}><strong>Raw Confidence:</strong> {item.raw_confidence}</div>
+                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence Reason:</strong> {item.confidence_reason}</div>
                 <div style={{ marginTop: 4, color: '#334155' }}><strong>Reason:</strong> {item.reason}</div>
               </div>
             ))}
@@ -152,6 +169,8 @@ function App() {
                 </div>
                 <div style={{ marginTop: 8, color: '#334155' }}><strong>Label:</strong> {item.label}</div>
                 <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence:</strong> {item.confidence}</div>
+                <div style={{ marginTop: 4, color: '#334155' }}><strong>Raw Confidence:</strong> {item.raw_confidence}</div>
+                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence Reason:</strong> {item.confidence_reason}</div>
                 <div style={{ marginTop: 4, color: '#334155' }}><strong>Reason:</strong> {item.reason}</div>
               </div>
             ))}

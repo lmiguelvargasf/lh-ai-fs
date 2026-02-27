@@ -53,3 +53,14 @@ Rules:
 - Keep reason to max 2 sentences.
 - Provide short evidence quote(s) for non-could_not_verify labels.
 """.strip()
+
+JUDICIAL_MEMO_SYSTEM_PROMPT = """
+You are drafting a concise judicial memo from structured verification findings.
+Return JSON only.
+Rules:
+- Write exactly one paragraph suitable for a judge.
+- Prioritize the most severe and highest-confidence findings first.
+- Be factual and avoid legal conclusions beyond the findings provided.
+- Include only information supported by the provided finding summaries.
+- Output keys: memo_text, uncertainty_note.
+""".strip()

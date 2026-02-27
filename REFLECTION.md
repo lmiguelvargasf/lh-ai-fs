@@ -1,37 +1,79 @@
 # Reflection
 
-## What I prioritized
+## 1) Problem decomposition into agents
 
-I prioritized a reliable Tier 1 + Tier 2 pipeline with typed contracts, explicit agent boundaries, and deterministic evaluation outputs.
+I intentionally used a typed DAG with single-purpose agents rather than a free-form supervisor. The final Tier 3 flow is:
 
-Key decisions:
+`ingest -> citation/quote extraction -> authority retrieval -> citation support verification -> quote verification -> fact claim extraction -> cross-document consistency -> confidence calibration -> judicial memo -> report assembly`
 
-1. Typed DAG orchestration over free-form supervisor behavior to keep failures isolated and debuggable.
-2. Strict JSON/schema-driven handoffs between agents, including the new cross-document branch.
-3. Deterministic eval harness with fixed fixtures and explicit hallucination checks so quality signals are reproducible.
+What I think this got right:
 
-## Tier 2 tradeoffs
+1. Agent responsibilities are non-overlapping and easy to reason about.
+2. Every stage communicates through explicit Pydantic models (no raw prose handoffs).
+3. Per-step timing and error boundaries made partial success possible instead of all-or-nothing failure.
 
-1. Cross-document consistency is precision-first for contradiction flags. I only mark `contradicted` with explicit conflicting evidence, and I default to `could_not_verify` when evidence is weak.
-2. Fact-claim extraction is deterministic by default (rules-first) to keep evals stable, with optional LLM extraction behind a toggle.
-3. Cross-document checks are anchored to sentence-level evidence spans, which improves auditability but can miss nuanced multi-sentence context.
+What I gave up:
 
-## What worked well
+1. Less adaptive behavior than a planner/supervisor architecture.
+2. More boilerplate for schemas and conversions.
 
-1. Agent decomposition remains clear and non-overlapping across Tier 1 and Tier 2.
-2. `/analyze` returns a structured report with citation, quote, and cross-document findings.
-3. Eval reporting now includes task breakdown (`citation_quote`, `cross_document`) and combined roll-up metrics.
+## 2) Prompt precision
 
-## Remaining gaps and limitations
+I kept prompts short, label-constrained, and JSON-only. The verifier prompts force the model to:
 
-1. Tier 3 judicial memo and confidence calibration layering are not implemented.
-2. Citation/quote verification still depends on best-effort authority retrieval and can degrade when sources are unavailable.
-3. Rule-based cross-document logic is tuned for this case format and should be generalized with broader fixtures.
-4. Current confidence values are heuristic and not statistically calibrated.
+1. Use only supplied evidence.
+2. Emit explicit uncertainty (`could_not_verify`) when context is missing.
+3. Stay concise (short reasons) and evidence-anchored.
 
-## If I had more time
+This reduced format drift, but there is still model variance on borderline semantic support judgments.
 
-1. Add more cross-document fixtures (adversarial contradictions, partial supports, and neutral controls).
-2. Add optional LLM adjudication for edge cases while preserving deterministic fallback.
-3. Add calibration and threshold tuning using held-out eval examples.
-4. Extend frontend evidence drill-down for side-by-side claim vs source views.
+## 3) Eval approach and what it measures
+
+I used deterministic gold fixtures and scored what matters for this challenge:
+
+1. Precision/recall for defect flagging.
+2. Hallucination rate for evidence-anchor integrity.
+3. Task split metrics (`citation_quote` vs `cross_document`) and macro roll-up.
+4. Tier 3 contract checks:
+   - confidence fields present/bounded with reason
+   - judicial memo structure + valid supporting finding IDs
+
+Latest run:
+
+1. Precision: `0.9286`
+2. Recall: `1.0000`
+3. Hallucination rate: `0.0000`
+4. Confidence contract pass rate: `1.0000`
+5. Memo contract pass: `true`
+
+Honest read: recall is strong on this fixture set, but precision is not perfect (1 false positive remains), which is acceptable but signals threshold/rule tuning opportunity.
+
+## 4) How far I got through the spec
+
+Implemented:
+
+1. Tier 3-only API/runtime path.
+2. Confidence calibration agent with deterministic adjustment rules and reasons.
+3. Judicial memo agent with LLM-first generation and deterministic fallback.
+4. Structured UI rendering for memo + confidence fields.
+5. Tier 3 eval harness and tests, including contract checks.
+
+Not implemented:
+
+1. Learned/statistical calibration on held-out datasets.
+2. More sophisticated retrieval providers beyond current approach.
+3. Rich memo quality scoring beyond structural contract checks.
+
+## 5) Tradeoffs and remaining gaps
+
+1. Calibration is heuristic and transparent, but not statistically calibrated.
+2. Cross-document contradiction checks are precision-first and may miss subtle inconsistencies.
+3. Citation support quality is coupled to retrieval quality; upstream source failures can push outcomes to `could_not_verify`.
+4. Memo quality is bounded by finding quality and ranking logic; template fallback is reliable but less nuanced.
+
+## 6) What I would do next
+
+1. Build held-out calibration fixtures and tune confidence rule weights from observed FP/FN patterns.
+2. Add memo factuality/coverage evals that score sentence-level grounding against supporting finding IDs.
+3. Expand cross-document fixtures with adversarial phrasing, temporal ambiguity, and mixed-support cases.
+4. Add UI evidence drill-down (motion span + external span side-by-side) to speed human review.
