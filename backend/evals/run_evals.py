@@ -239,8 +239,8 @@ def _check_memo_contract(
 
 
 def run() -> EvalResult:
-    gold = _load_json(FIXTURES_DIR / "tier3_gold.json")
-    overrides = _load_json(FIXTURES_DIR / "tier1_authority_overrides.json")
+    gold = _load_json(FIXTURES_DIR / "gold.json")
+    overrides = _load_json(FIXTURES_DIR / "authority_overrides.json")
 
     report_model = analyze_documents(
         AnalyzeRequest(use_web_retrieval=False),
@@ -354,7 +354,7 @@ def run() -> EvalResult:
 
     hallucination_rate, hallucination_details = _hallucination_rate(report)
 
-    contract_config = gold.get("tier3_contract_expectations", {})
+    contract_config = gold.get("contract_expectations", {})
     required_confidence_fields = contract_config.get(
         "required_confidence_fields",
         ["raw_confidence", "confidence", "confidence_reason"],
@@ -387,7 +387,7 @@ def run() -> EvalResult:
             "macro_precision": round(combined_precision, 4),
             "macro_recall": round(combined_recall, 4),
         },
-        tier3_contracts={
+        contract_checks={
             "confidence_contract_pass_rate": confidence_pass_rate,
             "memo_contract_pass": memo_pass,
         },
@@ -420,7 +420,7 @@ def run() -> EvalResult:
             "count": len(hallucination_details),
             "details": hallucination_details,
         },
-        "tier3_contract_checks": {
+        "contract_checks": {
             "confidence_contract_pass_rate": confidence_pass_rate,
             "confidence_failures": confidence_failures,
             "memo_contract_pass": memo_pass,

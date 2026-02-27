@@ -213,7 +213,7 @@ class ReportAssemblerAgent:
         )
 
         return VerificationReport(
-            mode="tier3",
+            mode="final",
             run_id=run_id,
             status=status,
             summary=summary,

@@ -17,7 +17,7 @@ from schemas import AnalyzeRequest, JudicialMemo, PipelineError, VerificationRep
 
 
 class PipelineOrchestrator:
-    """Typed DAG orchestration for Tier 3 analysis pipeline."""
+    """Typed DAG orchestration for the full analysis pipeline."""
 
     def __init__(self) -> None:
         self.document_ingest_agent = DocumentIngestAgent()

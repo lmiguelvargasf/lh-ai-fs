@@ -6,7 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-PipelineMode = Literal["tier3"]
+PipelineMode = Literal["final"]
 ReportStatus = Literal["complete", "partial", "failed"]
 RetrievalStatus = Literal["found", "not_found", "error", "disabled"]
 SupportLabel = Literal[
@@ -216,7 +216,7 @@ class PipelineError(BaseModel):
 
 class VerificationReport(BaseModel):
     report_version: str = "1.0"
-    mode: PipelineMode = "tier3"
+    mode: PipelineMode = "final"
     status: ReportStatus = "complete"
     run_id: str
     generated_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -250,7 +250,7 @@ class EvalMetricSummary(BaseModel):
     false_negative: int
     task_breakdown: dict[str, Any] = Field(default_factory=dict)
     combined: dict[str, Any] = Field(default_factory=dict)
-    tier3_contracts: dict[str, Any] = Field(default_factory=dict)
+    contract_checks: dict[str, Any] = Field(default_factory=dict)
 
 
 class EvalResult(BaseModel):

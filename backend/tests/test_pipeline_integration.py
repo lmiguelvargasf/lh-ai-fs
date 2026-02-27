@@ -8,12 +8,12 @@ from analysis_service import analyze_documents, load_documents
 from schemas import AnalyzeRequest
 
 
-def test_tier3_pipeline_returns_structured_report_with_memo_and_confidence() -> None:
+def test_pipeline_returns_structured_report_with_memo_and_confidence() -> None:
     fixture_path = (
         Path(__file__).resolve().parents[1]
         / "evals"
         / "fixtures"
-        / "tier1_authority_overrides.json"
+        / "authority_overrides.json"
     )
     overrides = json.loads(fixture_path.read_text())
 
@@ -23,7 +23,7 @@ def test_tier3_pipeline_returns_structured_report_with_memo_and_confidence() -> 
         authority_overrides=overrides,
     )
 
-    assert report.mode == "tier3"
+    assert report.mode == "final"
     assert report.summary.citations_extracted > 0
     assert report.summary.fact_claims_checked > 0
     assert isinstance(report.citation_findings, list)
@@ -40,12 +40,12 @@ def test_tier3_pipeline_returns_structured_report_with_memo_and_confidence() -> 
     assert report.status in {"complete", "partial"}
 
 
-def test_tier3_pipeline_uses_memo_template_fallback_on_error(monkeypatch) -> None:
+def test_pipeline_uses_memo_template_fallback_on_error(monkeypatch) -> None:
     fixture_path = (
         Path(__file__).resolve().parents[1]
         / "evals"
         / "fixtures"
-        / "tier1_authority_overrides.json"
+        / "authority_overrides.json"
     )
     overrides = json.loads(fixture_path.read_text())
 

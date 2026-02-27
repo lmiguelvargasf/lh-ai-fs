@@ -101,7 +101,7 @@
       "note": "Court filing records are not in provided documents."
     }
   ],
-  "tier3_contract_expectations": {
+  "contract_expectations": {
     "memo_min_chars": 80,
     "require_supporting_ids": true,
     "required_confidence_fields": [

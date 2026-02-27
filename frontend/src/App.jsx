@@ -1,18 +1,35 @@
 import { useMemo, useState } from 'react'
+import './App.css'
 
 const API_URL = 'http://localhost:8002/analyze'
 
-const badgeStyle = (flagged) => ({
-  padding: '4px 10px',
-  borderRadius: '999px',
-  fontSize: '12px',
-  fontWeight: 600,
-  background: flagged ? '#fee2e2' : '#dcfce7',
-  color: flagged ? '#991b1b' : '#166534',
-})
+function SectionTitle({ title, count }) {
+  return (
+    <div className="section-header">
+      <h2>{title}</h2>
+      <span className="count-pill">{count}</span>
+    </div>
+  )
+}
 
-function SectionTitle({ children }) {
-  return <h2 style={{ marginTop: 28, marginBottom: 10 }}>{children}</h2>
+function StatusPill({ flagged }) {
+  return <span className={`status-pill ${flagged ? 'is-flagged' : 'is-clear'}`}>{flagged ? 'Flagged' : 'Clear'}</span>
+}
+
+function KeyValue({ label, value }) {
+  return (
+    <div className="kv-item">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  )
+}
+
+function formatConfidence(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 'n/a'
+  }
+  return value.toFixed(2)
 }
 
 function App() {
@@ -47,156 +64,182 @@ function App() {
     }
   }
 
-  const hasReport = useMemo(() => report && typeof report === 'object', [report])
+  const hasReport = useMemo(() => Boolean(report && typeof report === 'object'), [report])
+
+  const summaryItems = useMemo(() => {
+    if (!report) {
+      return []
+    }
+    const summary = report.summary ?? {}
+    return [
+      { label: 'Status', value: report.status ?? 'n/a' },
+      { label: 'Citations', value: summary.citations_extracted ?? 0 },
+      { label: 'Quotes', value: summary.quotes_checked ?? 0 },
+      { label: 'Flags', value: summary.flags_total ?? 0 },
+      { label: 'Fact Claims', value: summary.fact_claims_checked ?? 0 },
+      { label: 'Cross-Doc Flags', value: summary.cross_doc_flags_total ?? 0 },
+    ]
+  }, [report])
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '32px auto', padding: '0 20px', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
-      <h1 style={{ marginBottom: 6 }}>BS Detector</h1>
-      <p style={{ marginTop: 0, color: '#334155' }}>Tier 3 multi-agent legal verification pipeline</p>
+    <div className="page-shell">
+      <div className="page-bg" aria-hidden />
+      <main className="layout">
+        <header className="hero section-appear">
+          <div className="hero-kicker">Multi-Agent Verification</div>
+          <h1>BS Detector</h1>
+          <p className="hero-copy">
+            Structured legal-brief verification with calibrated confidence, cross-document checks, and judge-ready synthesis.
+          </p>
+          <div className="hero-actions">
+            <button className="run-button" onClick={runAnalysis} disabled={loading}>
+              {loading ? 'Analyzing Record...' : 'Run Analysis'}
+            </button>
+            <a className="reference-link" href="https://www.learned-hand.ai" target="_blank" rel="noreferrer">
+              Design Inspiration
+            </a>
+          </div>
+        </header>
 
-      <button
-        onClick={runAnalysis}
-        disabled={loading}
-        style={{
-          marginTop: 6,
-          padding: '10px 20px',
-          border: 'none',
-          borderRadius: '8px',
-          background: loading ? '#94a3b8' : '#0f172a',
-          color: '#fff',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          fontWeight: 600,
-        }}
-      >
-        {loading ? 'Analyzing...' : 'Run Analysis'}
-      </button>
+        {error && (
+          <section className="panel error-panel section-appear">
+            <h3>Pipeline Error</h3>
+            <p>{error}</p>
+          </section>
+        )}
 
-      {error && (
-        <div style={{ marginTop: '20px', color: '#991b1b', background: '#fee2e2', padding: 12, borderRadius: 8 }}>
-          <strong>Error:</strong> {error}
-        </div>
-      )}
-
-      {hasReport && (
-        <>
-          <SectionTitle>Judicial Memo</SectionTitle>
-          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
-            <div style={{ color: '#0f172a', lineHeight: 1.45 }}>{report.judicial_memo?.text || 'No memo available.'}</div>
-            <div style={{ marginTop: 8, color: '#334155' }}>
-              <strong>Generation:</strong> {report.judicial_memo?.generation_mode ?? 'n/a'}
-            </div>
-            {report.judicial_memo?.uncertainty_note && (
-              <div style={{ marginTop: 4, color: '#7c2d12' }}>
-                <strong>Note:</strong> {report.judicial_memo.uncertainty_note}
+        {hasReport && (
+          <>
+            <section className="panel memo-panel section-appear">
+              <div className="memo-head">
+                <h2>Judicial Memo</h2>
+                <span className="mode-chip">{report.judicial_memo?.generation_mode ?? 'n/a'}</span>
               </div>
-            )}
-          </div>
+              <p className="memo-text">{report.judicial_memo?.text || 'No memo available.'}</p>
+              {report.judicial_memo?.uncertainty_note && (
+                <p className="memo-note">
+                  <strong>Uncertainty:</strong> {report.judicial_memo.uncertainty_note}
+                </p>
+              )}
+              {(report.judicial_memo?.supporting_finding_ids ?? []).length > 0 && (
+                <p className="memo-support">
+                  <strong>Supporting Findings:</strong> {report.judicial_memo.supporting_finding_ids.join(', ')}
+                </p>
+              )}
+            </section>
 
-          <SectionTitle>Run Summary</SectionTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: '#334155' }}>Status</div>
-              <div style={{ fontWeight: 700 }}>{report.status}</div>
-            </div>
-            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: '#334155' }}>Citations</div>
-              <div style={{ fontWeight: 700 }}>{report.summary?.citations_extracted ?? 0}</div>
-            </div>
-            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: '#334155' }}>Quotes</div>
-              <div style={{ fontWeight: 700 }}>{report.summary?.quotes_checked ?? 0}</div>
-            </div>
-            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: '#334155' }}>Flags</div>
-              <div style={{ fontWeight: 700 }}>{report.summary?.flags_total ?? 0}</div>
-            </div>
-            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: '#334155' }}>Fact Claims</div>
-              <div style={{ fontWeight: 700 }}>{report.summary?.fact_claims_checked ?? 0}</div>
-            </div>
-            <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: '#334155' }}>Cross-Doc Flags</div>
-              <div style={{ fontWeight: 700 }}>{report.summary?.cross_doc_flags_total ?? 0}</div>
-            </div>
-          </div>
+            <section className="metrics-grid section-appear">
+              {summaryItems.map((item) => (
+                <article key={item.label} className="metric-card">
+                  <p>{item.label}</p>
+                  <strong>{item.value}</strong>
+                </article>
+              ))}
+            </section>
 
-          <SectionTitle>Citation Findings</SectionTitle>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {(report.citation_findings ?? []).map((item) => (
-              <div key={item.id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                  <div style={{ fontWeight: 700 }}>{item.raw_citation}</div>
-                  <span style={badgeStyle(item.flagged)}>{item.flagged ? 'Flagged' : 'Clear'}</span>
-                </div>
-                <div style={{ marginTop: 8, color: '#334155' }}><strong>Label:</strong> {item.support_label}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence:</strong> {item.confidence}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Raw Confidence:</strong> {item.raw_confidence}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence Reason:</strong> {item.confidence_reason}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Reason:</strong> {item.reason}</div>
-                {item.source_url && (
-                  <div style={{ marginTop: 4 }}>
-                    <a href={item.source_url} target="_blank" rel="noreferrer">Source</a>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <SectionTitle>Quote Findings</SectionTitle>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {(report.quote_findings ?? []).map((item) => (
-              <div key={item.id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                  <div style={{ fontWeight: 700 }}>"{item.quote_text}"</div>
-                  <span style={badgeStyle(item.flagged)}>{item.flagged ? 'Flagged' : 'Clear'}</span>
-                </div>
-                <div style={{ marginTop: 8, color: '#334155' }}><strong>Label:</strong> {item.quote_label}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence:</strong> {item.confidence}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Raw Confidence:</strong> {item.raw_confidence}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence Reason:</strong> {item.confidence_reason}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Reason:</strong> {item.reason}</div>
-              </div>
-            ))}
-          </div>
-
-          <SectionTitle>Cross-Document Findings</SectionTitle>
-          <div style={{ display: 'grid', gap: 12 }}>
-            {(report.cross_document_findings ?? []).map((item) => (
-              <div key={item.id} style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                  <div style={{ fontWeight: 700 }}>{item.claim_text}</div>
-                  <span style={badgeStyle(item.flagged)}>{item.flagged ? 'Flagged' : 'Clear'}</span>
-                </div>
-                <div style={{ marginTop: 8, color: '#334155' }}><strong>Label:</strong> {item.label}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence:</strong> {item.confidence}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Raw Confidence:</strong> {item.raw_confidence}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Confidence Reason:</strong> {item.confidence_reason}</div>
-                <div style={{ marginTop: 4, color: '#334155' }}><strong>Reason:</strong> {item.reason}</div>
-              </div>
-            ))}
-          </div>
-
-          {(report.errors ?? []).length > 0 && (
-            <>
-              <SectionTitle>Pipeline Errors</SectionTitle>
-              <div style={{ background: '#fff7ed', border: '1px solid #fdba74', borderRadius: 10, padding: 14 }}>
-                {(report.errors ?? []).map((err, idx) => (
-                  <div key={`${err.step}_${idx}`} style={{ marginBottom: 10 }}>
-                    <strong>{err.step}:</strong> {err.message}
-                    {err.detail && <div style={{ color: '#7c2d12' }}>{err.detail}</div>}
-                  </div>
+            <section className="section-appear">
+              <SectionTitle title="Citation Findings" count={(report.citation_findings ?? []).length} />
+              <div className="findings-grid">
+                {(report.citation_findings ?? []).map((item, index) => (
+                  <article
+                    key={item.id}
+                    className={`finding-card ${item.flagged ? 'flagged' : 'clean'}`}
+                    style={{ '--stagger': index }}
+                  >
+                    <div className="finding-head">
+                      <h3>{item.raw_citation}</h3>
+                      <StatusPill flagged={item.flagged} />
+                    </div>
+                    <p className="finding-reason">{item.reason}</p>
+                    <dl className="kv-grid">
+                      <KeyValue label="Label" value={item.support_label ?? 'n/a'} />
+                      <KeyValue label="Confidence" value={formatConfidence(item.confidence)} />
+                      <KeyValue label="Raw Confidence" value={formatConfidence(item.raw_confidence)} />
+                      <KeyValue label="Confidence Reason" value={item.confidence_reason ?? 'n/a'} />
+                    </dl>
+                    {item.source_url && (
+                      <a className="inline-link" href={item.source_url} target="_blank" rel="noreferrer">
+                        View Source
+                      </a>
+                    )}
+                  </article>
                 ))}
               </div>
-            </>
-          )}
-        </>
-      )}
+            </section>
 
-      {!hasReport && !loading && !error && (
-        <p style={{ marginTop: '20px', color: '#64748b' }}>
-          Click "Run Analysis" to produce a structured verification report.
-        </p>
-      )}
+            <section className="section-appear">
+              <SectionTitle title="Quote Findings" count={(report.quote_findings ?? []).length} />
+              <div className="findings-grid">
+                {(report.quote_findings ?? []).map((item, index) => (
+                  <article
+                    key={item.id}
+                    className={`finding-card ${item.flagged ? 'flagged' : 'clean'}`}
+                    style={{ '--stagger': index }}
+                  >
+                    <div className="finding-head">
+                      <h3>&quot;{item.quote_text}&quot;</h3>
+                      <StatusPill flagged={item.flagged} />
+                    </div>
+                    <p className="finding-reason">{item.reason}</p>
+                    <dl className="kv-grid">
+                      <KeyValue label="Label" value={item.quote_label ?? 'n/a'} />
+                      <KeyValue label="Confidence" value={formatConfidence(item.confidence)} />
+                      <KeyValue label="Raw Confidence" value={formatConfidence(item.raw_confidence)} />
+                      <KeyValue label="Confidence Reason" value={item.confidence_reason ?? 'n/a'} />
+                    </dl>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="section-appear">
+              <SectionTitle title="Cross-Document Findings" count={(report.cross_document_findings ?? []).length} />
+              <div className="findings-grid">
+                {(report.cross_document_findings ?? []).map((item, index) => (
+                  <article
+                    key={item.id}
+                    className={`finding-card ${item.flagged ? 'flagged' : 'clean'}`}
+                    style={{ '--stagger': index }}
+                  >
+                    <div className="finding-head">
+                      <h3>{item.claim_text}</h3>
+                      <StatusPill flagged={item.flagged} />
+                    </div>
+                    <p className="finding-reason">{item.reason}</p>
+                    <dl className="kv-grid">
+                      <KeyValue label="Label" value={item.label ?? 'n/a'} />
+                      <KeyValue label="Confidence" value={formatConfidence(item.confidence)} />
+                      <KeyValue label="Raw Confidence" value={formatConfidence(item.raw_confidence)} />
+                      <KeyValue label="Confidence Reason" value={item.confidence_reason ?? 'n/a'} />
+                    </dl>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            {(report.errors ?? []).length > 0 && (
+              <section className="panel warning-panel section-appear">
+                <SectionTitle title="Pipeline Errors" count={(report.errors ?? []).length} />
+                <div className="error-list">
+                  {(report.errors ?? []).map((item) => (
+                    <article key={`${item.step}_${item.message}_${item.detail ?? ''}`}>
+                      <h4>{item.step}</h4>
+                      <p>{item.message}</p>
+                      {item.detail && <small>{item.detail}</small>}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+
+        {!hasReport && !loading && !error && (
+          <section className="panel empty-panel section-appear">
+            <p>Run analysis to generate a structured verification report.</p>
+          </section>
+        )}
+      </main>
     </div>
   )
 }
